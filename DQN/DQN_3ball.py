@@ -151,11 +151,11 @@ for episode in range(1000):
     while not done:
         step += 1
         a = dqn.select_action(th.FloatTensor(s).to(device))
-        obs, r, done, truncated, _ = env.step(a.item())  # 액션을 넘겨줄 때 item() 메서드 사용
+        obs, r, done, terminated, truncatedsa = env.step(a.item())  # 액션을 넘겨줄 때 item() 메서드 사용
 
         s_ = preprocess_state(obs)
         transition = [s.tolist(), a.item(), [r], s_.tolist(), [done]]
-
+        done = terminated or truncated
         dqn.replay_mem.store_transition(transition)
         total_reward += r
         s = s_
