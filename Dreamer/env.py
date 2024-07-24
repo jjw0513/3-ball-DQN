@@ -1,8 +1,7 @@
 import cv2
 import numpy as np
 import torch
-from envs.GymMoreRedBalls import GymMoreRedBalls
-from gymnasium.spaces import Box, Discrete  # 필요한 공간을 임포트
+from gymnasium.spaces import Box  # 필요한 공간을 임포트
 from envs.GymMoreRedBalls import GymMoreRedBalls  # GymMoreRedBalls 환경 임포트
 
 GYM_ENVS = [

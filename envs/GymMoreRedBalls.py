@@ -96,7 +96,7 @@ class GymMoreRedBalls(RoomGridLevel):
     Go to the red ball. No distractors present.
     [ADDED] but you should go to the closest red ball.
 
-    ## Mission Space
+    ## Mission Spacea
 
     "go to the red ball"
 
@@ -130,6 +130,8 @@ class GymMoreRedBalls(RoomGridLevel):
         self.num_objs = num_objs
         super().__init__(num_rows=1, num_cols=1, room_size=room_size, **kwargs)
 
+        #일단 max_step 임의 지정
+        #self.max_steps = max_steps
 
     def gen_mission(self):
         self.place_agent()

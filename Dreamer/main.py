@@ -16,7 +16,7 @@ from memory import ExperienceReplay
 from models import ActorModel, Encoder, ObservationModel, RewardModel, TransitionModel, ValueModel, bottle
 from planner import MPCPlanner
 from utils import FreezeParameters, imagine_ahead, lambda_return, lineplot, write_video
-from envs.GymMoreRedBalls import GymMoreRedBalls
+
 # Hyperparameters
 parser = argparse.ArgumentParser(description='PlaNet or Dreamer')
 parser.add_argument('--algo', type=str, default='dreamer', help='planet or dreamer')
