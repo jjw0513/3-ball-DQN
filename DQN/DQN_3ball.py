@@ -46,7 +46,7 @@ args = parser.parse_args()
 
 # Create and wrap the environment
 env = GymMoreRedBalls(room_size=10, render_mode='rgb_array')
-#wrapped_env = MaxStepsWrapper(env, max_steps=args.max_steps)
+env = MaxStepsWrapper(env, max_steps=5000)
 
 device = th.device("cuda" if th.cuda.is_available() and not args.disable_cuda else "cpu")
 n_action = 3
@@ -169,7 +169,7 @@ for episode in range(args.episodes):
     while not done:
         step += 1
         a = dqn.select_action(th.FloatTensor(s).to(device))
-        obs, r, done, terminated, truncated = env.step(a.item())  # 액션을 넘겨줄 때 item() 메서드 사용
+        obs, r, terminated, truncated, info = env.step(a.item())  # 액션을 넘겨줄 때 item() 메서드 사용
         done = terminated or truncated
         s_ = preprocess_state(obs)
         transition = [s.tolist(), a.item(), [r], s_.tolist(), [done]]
