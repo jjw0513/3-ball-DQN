@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from gymnasium.spaces import Box  # 필요한 공간을 임포트
 from envs.GymMoreRedBalls import GymMoreRedBalls  # GymMoreRedBalls 환경 임포트
-
+from envs.wrapper import MaxStepsWrapper
 GYM_ENVS = [
     'Pendulum-v0',
     'MountainCarContinuous-v0',
@@ -160,6 +160,7 @@ class GymEnv:
         from gymnasium.spaces import Box, Discrete  # 필요한 공간을 임포트
         self.symbolic = symbolic
         self._env = gym.make(env,render_mode="rgb_array")
+
         #self._env.seed(seed)
         self.max_episode_length = max_episode_length
         self.action_repeat = action_repeat
@@ -183,7 +184,6 @@ class GymEnv:
         if self.symbolic:
             return torch.tensor(state, dtype=torch.float32).unsqueeze(dim=0)
         else:
-            #return _images_to_observation(self._env.render(mode='rgb_array'), self.bit_depth)
             render_output = self._env.render()  # render 호출
             if render_output is None or len(render_output) == 0:
                 raise ValueError("Render output is empty or None.")
@@ -234,13 +234,13 @@ class GymEnv:
         else:
             return torch.tensor(int(action))  # numpy.int64 등을 처리하기 위한 변환
 
-def Env(env, symbolic, seed, max_episode_length, action_repeat, bit_depth):
+def Env(env, symbolic, seed, max_episode_length, action_repeat, bit_depth, max_steps):
     if env in GYM_ENVS:
-        return GymEnv(env, symbolic, seed, max_episode_length, action_repeat, bit_depth)
+        env = GymEnv(env, symbolic, seed, max_episode_length, action_repeat, bit_depth)
+        env = MaxStepsWrapper(env, max_steps)
+        return env
     elif env in CONTROL_SUITE_ENVS:
         return ControlSuiteEnv(env, symbolic, seed, max_episode_length, action_repeat, bit_depth)
-    elif env == 'GymMoreRedBalls-v0':  # 예시: GymMoreRedBalls라는 이름으로 환경을 추가할 경우
-        return GymMoreRedBalls(symbolic, seed, max_episode_length, action_repeat, bit_depth)
 
 # Wrapper for batching environments together
 class EnvBatcher:

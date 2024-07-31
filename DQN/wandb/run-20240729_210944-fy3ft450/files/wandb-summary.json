@@ -1,1 +1,0 @@
-{"steps": 1636, "_timestamp": 1722255096.710124, "_runtime": 112.138827085495, "_step": 3, "episode": 1, "reward": 0.7055199999999999, "average_loss": 0.02112133001318329, "avg_q_value": 1.092106580734253, "_wandb": {"runtime": 119}}

@@ -286,6 +286,7 @@ if __name__ == "__main__":
     env = GymMoreRedBalls(room_size=10,render_mode='rgb_array')
     env.reset(seed=123)
     env.render()
+    print("Test")
     """
     ## Action Space
 
