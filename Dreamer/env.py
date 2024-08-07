@@ -236,8 +236,8 @@ class GymEnv:
 
 def Env(env, symbolic, seed, max_episode_length, action_repeat, bit_depth, max_steps):
     if env in GYM_ENVS:
-        #env = GymEnv(env, symbolic, seed, max_episode_length, action_repeat, bit_depth)
-        env = MaxStepDreamer(env, max_steps)
+        env = GymEnv(env, symbolic, seed, max_episode_length, action_repeat, bit_depth)
+        #env = MaxStepDreamer(env, max_steps)
         return env
     elif env in CONTROL_SUITE_ENVS:
         return ControlSuiteEnv(env, symbolic, seed, max_episode_length, action_repeat, bit_depth)

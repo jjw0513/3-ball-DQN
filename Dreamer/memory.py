@@ -70,6 +70,9 @@ class ExperienceReplay:
         return [torch.as_tensor(item).to(device=self.device) for item in batch]
 
 
+
+
+
 class ExperienceReplay_nosym:
     def __init__(self, size, observation_size, action_size, bit_depth, device):
         self.device = device

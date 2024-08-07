@@ -16,12 +16,22 @@ class MaxStepsWrapper(Wrapper):
             self.env.max_steps = kwargs['options']['max_steps']
         else:
             self.env.max_steps = self.max_steps
+        state = self.preprocess_state(state[0])
         return state
 
+    #def step(self, action):
+    #    return self.env.step(action)
     def step(self, action):
-        return self.env.step(action)
+        observation, r, terminated, truncated, info = self.env.step(action)
+        obs = self.preprocess_state(observation)
+        return obs, r, terminated, truncated, info
 
 
+    def preprocess_state(self, observation):
+        if isinstance(observation, dict):
+            return observation['image'].flatten()
+        else:
+            return observation.flatten()
 class FullyCustom(FullyObsWrapper):
     def __init__(self, env: gym.Env, max_steps: int):
         super().__init__(env)
