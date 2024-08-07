@@ -12,11 +12,15 @@ from torch.nn import functional as F
 from torchvision.utils import make_grid, save_image
 from tqdm import tqdm
 
-from env import CONTROL_SUITE_ENVS, GYM_ENVS, Env, EnvBatcher
-from memory import ExperienceReplay
+# from env import CONTROL_SUITE_ENVS, GYM_ENVS, Env, EnvBatcher
+from memory import ExperienceReplay_nosym as ExperienceReplay
 from models import ActorModel, Encoder, ObservationModel, RewardModel, TransitionModel, ValueModel, bottle
 from planner import MPCPlanner
 from utils import FreezeParameters, imagine_ahead, lambda_return, lineplot, write_video
+import gymnasium as gym
+from envs.GymMoreRedBalls import GymMoreRedBalls
+from envs.wrapper import MaxStepsWrapper
+from envs.wrapper import FullyCustom
 
 # Hyperparameters
 parser = argparse.ArgumentParser(description='PlaNet or Dreamer')
@@ -28,7 +32,7 @@ parser.add_argument(
     '--env',
     type=str,
     default='GymMoreRedBalls-v0',
-    choices=GYM_ENVS + CONTROL_SUITE_ENVS,
+    # choices=GYM_ENVS + CONTROL_SUITE_ENVS,
     help='Gym/Control Suite environment',
 )
 parser.add_argument('--symbolic-env', action='store_true', help='Symbolic features')
@@ -158,25 +162,31 @@ summary_name = results_dir + "/{}_{}_log"
 writer = SummaryWriter(summary_name.format(args.env, args.id))
 print("writer is ready")
 
-if args.env == "GymMoreRedBalls-v0" :
-    env = Env(args.env, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth, args.max_steps)
-# Initialise training environment and experience replay memory
-#else :
-#    env = Env(args.env, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth)
+
+env = gym.make(args.env, render_mode='human' if args.render else None)
+env = GymMoreRedBalls(room_size=10)
+env = FullyCustom(env, args.max_steps)
+env = MaxStepsWrapper(env, args.max_steps)
+
+
 print("environment is loaded")
 if args.experience_replay != '' and os.path.exists(args.experience_replay):
     D = torch.load(args.experience_replay)
     metrics['steps'], metrics['episodes'] = [D.steps] * D.episodes, list(range(1, D.episodes + 1))
 elif not args.test:
     D = ExperienceReplay(
-        args.experience_size, args.symbolic_env, env.observation_size, env.action_size, args.bit_depth, args.device
+        args.experience_size, env.observation_space['image'].shape, env.action_space.n, args.bit_depth, args.device
     )
     # Initialise dataset D with S random seed episodes
     for s in range(1, args.seed_episodes + 1):
-        observation, done, t = env.reset(), False, 0
+        done, t = False, 0
+        observation, info = env.reset()
+        # observation = observation.reshape(-1, np.prod(env.observation_space.shape)) # in case you need to do flatten
         while not done:
-            action = env.sample_random_action()
-            next_observation, reward, done = env.step(action)
+            action = env.action_space.sample() # TODO this is also changed to use the method of our env not their
+            next_observation, reward, done, truncated, _ = env.step(action)
+            if done or truncated:
+                done = True
             D.append(observation, action, reward, done)
             observation = next_observation
             t += 1

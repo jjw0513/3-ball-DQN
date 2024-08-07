@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from gymnasium.spaces import Box  # 필요한 공간을 임포트
 from envs.GymMoreRedBalls import GymMoreRedBalls  # GymMoreRedBalls 환경 임포트
-from envs.wrapper import MaxStepDreamer
+# from envs.wrapper import MaxStepDreamer
 GYM_ENVS = [
     'Pendulum-v0',
     'MountainCarContinuous-v0',

@@ -1,0 +1,1 @@
+{"episode": 1, "reward": 0.0, "average_loss": 0.07908699804296096, "avg_q_value": 1.0107406377792358, "steps": 300, "_timestamp": 1722951549.6700413, "_runtime": 90.7858293056488, "_step": 1, "_wandb": {"runtime": 54477}}
