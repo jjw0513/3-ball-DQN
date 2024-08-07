@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from gymnasium.spaces import Box  # 필요한 공간을 임포트
 from envs.GymMoreRedBalls import GymMoreRedBalls  # GymMoreRedBalls 환경 임포트
-from envs.wrapper import MaxStepsWrapper
+from envs.wrapper import MaxStepDreamer
 GYM_ENVS = [
     'Pendulum-v0',
     'MountainCarContinuous-v0',
@@ -236,8 +236,8 @@ class GymEnv:
 
 def Env(env, symbolic, seed, max_episode_length, action_repeat, bit_depth, max_steps):
     if env in GYM_ENVS:
-        env = GymEnv(env, symbolic, seed, max_episode_length, action_repeat, bit_depth)
-        env = MaxStepsWrapper(env, max_steps)
+        #env = GymEnv(env, symbolic, seed, max_episode_length, action_repeat, bit_depth)
+        env = MaxStepDreamer(env, max_steps)
         return env
     elif env in CONTROL_SUITE_ENVS:
         return ControlSuiteEnv(env, symbolic, seed, max_episode_length, action_repeat, bit_depth)
