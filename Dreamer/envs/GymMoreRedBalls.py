@@ -256,9 +256,9 @@ class GymMoreRedBalls(RoomGridLevel):
                 # action이 연속적인 값인 경우 이산적인 값으로 변환
 
         if not isinstance(action, int):
-            action = int(np.clip(round(action), 0, 2))  # 0과 6 사이의 값으로 클리핑
+            #action = int(np.clip(round(action), 0, 2))  # 0과 6 사이의 값으로 클리핑
                 # action이 연속적인 값인 경우 이산적인 값으로 변환
-
+            action = int(np.clip(action, 0, 2))
 
         obs_all, reward, terminated, truncated, info = super().step(action)
 

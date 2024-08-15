@@ -286,7 +286,7 @@ class SymbolicEncoder(jit.ScriptModule):
         hidden = self.fc3(hidden)
         return hidden
 
-
+'''
 class VisualEncoder(jit.ScriptModule):
     __constants__ = ['embedding_size']
 
@@ -300,6 +300,21 @@ class VisualEncoder(jit.ScriptModule):
         self.conv4 = nn.Conv2d(128, 256, 4, stride=2)
         self.fc = nn.Identity() if embedding_size == 1024 else nn.Linear(1024, embedding_size)
         self.modules = [self.conv1, self.conv2, self.conv3, self.conv4]
+'''
+class VisualEncoder(jit.ScriptModule):
+    __constants__ = ['embedding_size']
+
+    def __init__(self, embedding_size, activation_function='relu'):
+        super().__init__()
+        self.act_fn = getattr(F, activation_function)
+        self.embedding_size = embedding_size
+        self.conv1 = nn.Conv2d(3, 32, 4, stride=2)
+        self.conv2 = nn.Conv2d(32, 64, 4, stride=2)
+        self.conv3 = nn.Conv2d(64, 128, 4, stride=2)
+        self.conv4 = nn.Conv2d(128, 256, 4, stride=2)
+        self.fc = nn.Identity() if embedding_size == 1024 else nn.Linear(1024, embedding_size)
+        self.modules = [self.conv1, self.conv2, self.conv3, self.conv4]
+
 
     @jit.script_method
     def forward(self, observation):

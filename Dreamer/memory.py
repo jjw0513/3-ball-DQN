@@ -77,7 +77,15 @@ class ExperienceReplay_nosym:
     def __init__(self, size, observation_size, action_size, bit_depth, device):
         self.device = device
         self.size = size
-        self.observations = np.empty((size, *observation_size))
+        #self.observations = np.empty((size, *observation_size))
+        #(10,10,3)크기의 numpy 빈 배열 공간 생성
+
+        #self.observations = np.empty((size, *observation_size)).transpose(0, 3, 2, 1)
+
+        #updampling
+        self.observations = np.empty(
+             (size, 3, 64, 64),
+            dtype= np.uint8)
         self.actions = np.empty((size, action_size), dtype=np.float32)
         self.rewards = np.empty((size,), dtype=np.float32)
         self.nonterminals = np.empty((size, 1), dtype=np.float32)
@@ -87,8 +95,9 @@ class ExperienceReplay_nosym:
         self.bit_depth = bit_depth
 
     def append(self, observation, action, reward, done):
-        self.observations[self.idx] = observation.numpy()
-        self.actions[self.idx] = action.numpy()
+        self.observations[self.idx] = observation
+        self.actions[self.idx] = action
+
         self.rewards[self.idx] = reward
         self.nonterminals[self.idx] = not done
         self.idx = (self.idx + 1) % self.size
@@ -107,8 +116,8 @@ class ExperienceReplay_nosym:
     def _retrieve_batch(self, idxs, n, L):
         vec_idxs = idxs.transpose().reshape(-1)  # Unroll indices
         observations = torch.as_tensor(self.observations[vec_idxs].astype(np.float32))
-        if not self.symbolic_env:
-            preprocess_observation_(observations, self.bit_depth)  # Undo discretisation for visual observations
+        #if not self.symbolic_env:
+        preprocess_observation_(observations, self.bit_depth)  # Undo discretisation for visual observations
         return (
             observations.reshape(L, n, *observations.shape[1:]),
             self.actions[vec_idxs].reshape(L, n, -1),

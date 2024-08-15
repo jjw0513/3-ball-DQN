@@ -21,7 +21,7 @@ import gymnasium as gym
 from envs.GymMoreRedBalls import GymMoreRedBalls
 from envs.wrapper import MaxStepsWrapper
 from envs.wrapper import FullyCustom
-
+from envs.wrapper import EnvBatcher
 # Hyperparameters
 parser = argparse.ArgumentParser(description='PlaNet or Dreamer')
 parser.add_argument('--algo', type=str, default='dreamer', help='planet or dreamer')
@@ -166,8 +166,9 @@ print("writer is ready")
 env = gym.make(args.env, render_mode='human' if args.render else None)
 env = GymMoreRedBalls(room_size=10)
 env = FullyCustom(env, args.max_steps)
-env = MaxStepsWrapper(env, args.max_steps)
+#env = MaxStepsWrapper(env, args.max_steps)
 
+env = MaxStepsWrapper(env, args.max_steps, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth)
 
 print("environment is loaded")
 if args.experience_replay != '' and os.path.exists(args.experience_replay):
@@ -180,8 +181,9 @@ elif not args.test:
     # Initialise dataset D with S random seed episodes
     for s in range(1, args.seed_episodes + 1):
         done, t = False, 0
-        observation, info = env.reset()
-        # observation = observation.reshape(-1, np.prod(env.observation_space.shape)) # in case you need to do flatten
+        #observation, info = env.reset()
+        observation = env.reset()
+        #observation = observation.reshape(-1, np.prod(env.observation_space.shape)) # in case you need to do flatten
         while not done:
             action = env.action_space.sample() # TODO this is also changed to use the method of our env not their
             next_observation, reward, done, truncated, _ = env.step(action)
@@ -199,14 +201,18 @@ print("experience replay buffer is ready")
 transition_model = TransitionModel(
     args.belief_size,
     args.state_size,
-    env.action_size,
+    #env.action_size,
+    int(env.action_space.n),
+
     args.hidden_size,
     args.embedding_size,
     args.dense_activation_function,
 ).to(device=args.device)
 observation_model = ObservationModel(
     args.symbolic_env,
-    env.observation_size,
+    #env.observation_size,
+    env.observation_space['image'].shape,
+
     args.belief_size,
     args.state_size,
     args.embedding_size,
@@ -215,11 +221,11 @@ observation_model = ObservationModel(
 reward_model = RewardModel(args.belief_size, args.state_size, args.hidden_size, args.dense_activation_function).to(
     device=args.device
 )
-encoder = Encoder(args.symbolic_env, env.observation_size, args.embedding_size, args.cnn_activation_function).to(
+encoder = Encoder(args.symbolic_env, env.observation_space['image'].shape, args.embedding_size, args.cnn_activation_function).to(
     device=args.device
 )
 actor_model = ActorModel(
-    args.belief_size, args.state_size, args.hidden_size, env.action_size, args.dense_activation_function
+    args.belief_size, args.state_size, args.hidden_size, int(env.action_space.n), args.dense_activation_function
 ).to(device=args.device)
 value_model = ValueModel(args.belief_size, args.state_size, args.hidden_size, args.dense_activation_function).to(
     device=args.device
@@ -262,7 +268,8 @@ if args.algo == "dreamer":
 else:
     print("PLANET")
     planner = MPCPlanner(
-        env.action_size,
+        #env.action_size,
+        int(env.action_space.n),
         args.planning_horizon,
         args.optimisation_iters,
         args.candidates,
@@ -317,7 +324,7 @@ if args.test:
             belief, posterior_state, action = (
                 torch.zeros(1, args.belief_size, device=args.device),
                 torch.zeros(1, args.state_size, device=args.device),
-                torch.zeros(1, env.action_size, device=args.device),
+                torch.zeros(1, int(env.action_space.n), device=args.device),
             )
             #args.action_repeat로 나누어 반복 횟수를 줄인다.
             pbar = tqdm(range(args.max_episode_length // args.action_repeat))
@@ -554,13 +561,14 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
     lineplot(metrics['episodes'][-len(metrics['value_loss']) :], metrics['value_loss'], 'value_loss', results_dir)
 
     # Data collection
-    print("Data collection")
+    print("Data collection") ##여기까지 완성
     with torch.no_grad():
         observation, total_reward = env.reset(), 0
         belief, posterior_state, action = (
             torch.zeros(1, args.belief_size, device=args.device),
             torch.zeros(1, args.state_size, device=args.device),
-            torch.zeros(1, env.action_size, device=args.device),
+            #torch.zeros(1, env.action_size, device=args.device),
+            torch.zeros(1, int(env.action_space.n), device=args.device),
         )
         pbar = tqdm(range(args.max_episode_length // args.action_repeat))
         for t in pbar:  #총 에피소드 길이를 repeat수로 나눠 action 취함
@@ -620,7 +628,8 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
             belief, posterior_state, action = (
                 torch.zeros(args.test_episodes, args.belief_size, device=args.device),
                 torch.zeros(args.test_episodes, args.state_size, device=args.device),
-                torch.zeros(args.test_episodes, env.action_size, device=args.device),
+                #torch.zeros(args.test_episodes, env.action_size, device=args.device),
+                torch.zeros(args.test_episodes, int(env.action_space.n), device=args.device),
             )
             pbar = tqdm(range(args.max_episode_length // args.action_repeat))
             for t in pbar:
