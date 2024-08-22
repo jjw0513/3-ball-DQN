@@ -22,6 +22,7 @@ from envs.GymMoreRedBalls import GymMoreRedBalls
 from envs.wrapper import MaxStepsWrapper
 from envs.wrapper import FullyCustom
 from envs.wrapper import EnvBatcher
+from envs.wrapper import ActionSpaceWrapper
 # Hyperparameters
 parser = argparse.ArgumentParser(description='PlaNet or Dreamer')
 parser.add_argument('--algo', type=str, default='dreamer', help='planet or dreamer')
@@ -60,14 +61,14 @@ parser.add_argument(
 parser.add_argument('--hidden-size', type=int, default=200, metavar='H', help='Hidden size')
 parser.add_argument('--belief-size', type=int, default=200, metavar='H', help='Belief/hidden size')
 parser.add_argument('--state-size', type=int, default=30, metavar='Z', help='State/latent size')
-parser.add_argument('--action-repeat', type=int, default=2, metavar='R', help='Action repeat')
+parser.add_argument('--action-repeat', type=int, default=1, metavar='R', help='Action repeat')
 parser.add_argument('--action-noise', type=float, default=0.3, metavar='ε', help='Action noise')
 parser.add_argument('--episodes', type=int, default=1000, metavar='E', help='Total number of episodes')
 parser.add_argument('--seed-episodes', type=int, default=5, metavar='S', help='Seed episodes')
 parser.add_argument('--collect-interval', type=int, default=100, metavar='C', help='Collect interval')
 parser.add_argument('--batch-size', type=int, default=50, metavar='B', help='Batch size')
 parser.add_argument('--chunk-size', type=int, default=50, metavar='L', help='Chunk size')
-parser.add_argument('--max-steps', type=int, default=1000, metavar='MS', help='Maximum number of steps per episode')
+parser.add_argument('--max-steps', type=int, default=5000, metavar='MS', help='Maximum number of steps per episode')
 parser.add_argument(
     '--worldmodel-LogProbLoss',
     action='store_true',
@@ -163,14 +164,20 @@ writer = SummaryWriter(summary_name.format(args.env, args.id))
 print("writer is ready")
 
 
-env = gym.make(args.env, render_mode='human' if args.render else None)
+#env = gym.make(args.env, render_mode='human' if args.render else None)
 env = GymMoreRedBalls(room_size=10)
+env = ActionSpaceWrapper(env, args.max_steps,new_action_space=3)
 env = FullyCustom(env, args.max_steps)
 #env = MaxStepsWrapper(env, args.max_steps)
 
-env = MaxStepsWrapper(env, args.max_steps, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth)
+env = MaxStepsWrapper(env, args.max_steps, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth, new_action_space=3)
 
-print("environment is loaded")
+
+if 'GymMoreRedBalls' in args.env:
+    action_space_n_valid = 3
+
+
+print("environment is loaded") #env.env.env.env.max_steps : 5000
 if args.experience_replay != '' and os.path.exists(args.experience_replay):
     D = torch.load(args.experience_replay)
     metrics['steps'], metrics['episodes'] = [D.steps] * D.episodes, list(range(1, D.episodes + 1))
@@ -187,8 +194,13 @@ elif not args.test:
         while not done:
             action = env.action_space.sample() # TODO this is also changed to use the method of our env not their
             next_observation, reward, done, truncated, _ = env.step(action)
+
+            if done or truncated is True :
+                print("break is better")
+
             if done or truncated:
                 done = True
+
             D.append(observation, action, reward, done)
             observation = next_observation
             t += 1
@@ -305,9 +317,11 @@ def update_belief_and_act( #agent에게 만들어진 신념과 transition을 기
             Normal(action, args.action_noise).rsample(), -1, 1
         )  # Add gaussian exploration noise on top of the sampled action
         # action = action + args.action_noise * torch.randn_like(action)  # Add exploration noise ε ~ p(ε) to the action
-    next_observation, reward, done = env.step(
+    next_observation, reward, done,_,_ = env.step(
         action.cpu() if isinstance(env, EnvBatcher) else action[0].cpu()
     )  # Perform environment step (action repeats handled internally)
+    if reward > 0.1 :
+        pass
     return belief, posterior_state, action, next_observation, reward, done
 
 
@@ -563,7 +577,7 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
     # Data collection
     print("Data collection") ##여기까지 완성
     with torch.no_grad():
-        observation, total_reward = env.reset(), 0
+        observation, total_reward = env.reset(), 0 #env.env.env.env.max_steps : 300
         belief, posterior_state, action = (
             torch.zeros(1, args.belief_size, device=args.device),
             torch.zeros(1, args.state_size, device=args.device),
@@ -587,6 +601,8 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
             )
             D.append(observation, action.cpu(), reward, done)
             total_reward += reward
+            if total_reward > 0.1 :
+                pass #env.env.env.env.max_steps : 300
             observation = next_observation
             if args.render:
                 env.render()
@@ -617,8 +633,8 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
         value_model.eval()
         # Initialise parallelised test environments
         test_envs = EnvBatcher(
-            Env,
-            (args.env, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth, args.max_steps),
+            env,
+            (env, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth, args.max_steps),
             {},
             args.test_episodes,
         )

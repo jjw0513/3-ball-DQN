@@ -47,8 +47,8 @@ wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
 })
 '''
 # Create and wrap the environment
-env = gym.make(args.env, render_mode='human' if args.render else None)
-#env = GymMoreRedBalls(room_size=10)
+#env = gym.make(args.env, render_mode='human' if args.render else None)
+env = GymMoreRedBalls(room_size=10)
 env = FullyCustom(env, args.max_steps)
 env = MaxStepsWrapper(env, args.max_steps)
 device = th.device("cuda" if th.cuda.is_available() and not args.disable_cuda else "cpu")

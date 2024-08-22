@@ -15,8 +15,8 @@ from minigrid.core.roomgrid import RoomGrid
 from minigrid.wrappers import FullyObsWrapper
 from abc import ABC, abstractmethod
 import numpy as np
-
-
+import torch
+import numpy
 class SeqInOrderInstr(Instr, ABC):
     """
     Base class for sequencing instructions (before, after, and)
@@ -255,10 +255,18 @@ class GymMoreRedBalls(RoomGridLevel):
                 action = action[0]  # 배열의 첫 번째 요소를 사용
                 # action이 연속적인 값인 경우 이산적인 값으로 변환
 
-        if not isinstance(action, int):
+        if isinstance(action, numpy.int64) :
+            action = int(action)
+
+        if isinstance(action, torch.Tensor) :
+            action = torch.argmax(action)
+            action = action.item()
             #action = int(np.clip(round(action), 0, 2))  # 0과 6 사이의 값으로 클리핑
+
+
+
                 # action이 연속적인 값인 경우 이산적인 값으로 변환
-            action = int(np.clip(action, 0, 2))
+            #action = int(np.clip(action, 0, 2))
 
         obs_all, reward, terminated, truncated, info = super().step(action)
 

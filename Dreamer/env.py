@@ -191,7 +191,7 @@ class GymEnv:
     def step(self, action):
         action = action.detach().numpy()
         if isinstance(action, np.ndarray) and action.size == 1:
-            action = action.item()  # 단일 값으로 변환
+            action = action.item()
         reward = 0
         for k in range(self.action_repeat):
             state, reward_k, done, _, _ = self._env.step(action)

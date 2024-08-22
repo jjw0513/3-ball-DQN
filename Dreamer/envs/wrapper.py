@@ -47,8 +47,42 @@ import cv2
 import numpy as np
 import torch
 from gymnasium.spaces import Box
+
+
+class ActionSpaceWrapper(Wrapper):
+    def __init__(self, env: gym.Env,  max_steps, new_action_space: int):
+        super().__init__(env)
+        self.new_action_space = new_action_space
+        self.action_space = spaces.Discrete(new_action_space)
+        self.env.action_space = self.action_space
+
+
+        self.max_steps = max_steps
+        self.env.max_steps = max_steps
+
+    def reset(self, **kwargs):
+        # Reset the environment and update the max_steps
+        state = super().reset()
+
+
+
+        self.env.max_steps = self.max_steps
+        return state
+
+
+'''     
+    def step(self, action):
+        # Map the action to the original action space
+        original_action = self._map_action(action)
+        return self.env.step(original_action)
+
+    def _map_action(self, action):
+        # Map the action from the new action space to the original action space
+        # Example mapping: action = action if action < self.new_action_space - 1 else self.new_action_space - 1
+        return action
+'''
 class MaxStepsWrapper(Wrapper):
-    def __init__(self, env: gym.Env, max_steps: int, symbolic, seed, max_episode_length, action_repeat, bit_depth):
+    def __init__(self, env: gym.Env, max_steps: int, symbolic, seed, max_episode_length, action_repeat, bit_depth, new_action_space=3):
         super().__init__(env)
         self.max_steps = max_steps
         self.env.max_steps = max_steps
@@ -59,13 +93,20 @@ class MaxStepsWrapper(Wrapper):
         self.max_episode_length = max_episode_length
         self.action_repeat = action_repeat
         self.bit_depth = bit_depth
+
+        self.action_space = spaces.Discrete(new_action_space)
+        self.env.action_space = self.action_space
+        self.env.env.action_space = self.action_space
+        #self.env.env.evm.action_space = self.action_space
     def reset(self, **kwargs):
         self.t = 0
         state = self.env.reset()
         if 'options' in kwargs and 'max_steps' in kwargs['options']:
             self.env.max_steps = kwargs['options']['max_steps']
+            self.env.env.max_steps = kwargs['options']['max_steps']
         else:
             self.env.max_steps = self.max_steps
+            self.env.env.max_steps = self.max_steps
         state = self.preprocess_state(state[0])
         #return state
         return _images_to_observation(state, self.bit_depth)
@@ -88,6 +129,7 @@ class FullyCustom(FullyObsWrapper):
         self.max_steps = max_steps
         self.env.max_steps = max_steps
 
+
     def reset(self, **kwargs):
         # Reset the environment and update the max_steps
         state = super().reset()
@@ -96,7 +138,6 @@ class FullyCustom(FullyObsWrapper):
         else:
             self.env.max_steps = self.max_steps
         return state
-
 
 # Preprocesses an observation inplace (from float32 Tensor [0, 255] to [-0.5, 0.5])
 def preprocess_observation_(observation, bit_depth):
