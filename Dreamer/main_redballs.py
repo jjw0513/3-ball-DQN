@@ -23,6 +23,8 @@ from envs.wrapper import MaxStepsWrapper
 from envs.wrapper import FullyCustom
 from envs.wrapper import EnvBatcher
 from envs.wrapper import ActionSpaceWrapper
+
+import wandb
 # Hyperparameters
 parser = argparse.ArgumentParser(description='PlaNet or Dreamer')
 parser.add_argument('--algo', type=str, default='dreamer', help='planet or dreamer')
@@ -36,8 +38,13 @@ parser.add_argument(
     # choices=GYM_ENVS + CONTROL_SUITE_ENVS,
     help='Gym/Control Suite environment',
 )
+parser.add_argument('--wandb-project', type=str, default='3ball_CAP', help='WandB project name')
+parser.add_argument('--wandb-entity', type=str, default='hails', help='WandB entity name')
+
+
 parser.add_argument('--symbolic-env', action='store_true', help='Symbolic features')
-parser.add_argument('--max-episode-length', type=int, default=1000, metavar='T', help='Max episode length')
+#parser.add_argument('--max-episode-length', type=int, default=1000, metavar='T', help='Max episode length')
+parser.add_argument('--max-episode-length', type=int, default=10, metavar='T', help='Max episode length')
 parser.add_argument(
     '--experience-size', type=int, default=1000000, metavar='D', help='Experience replay size'
 )  # Original implementation has an unlimited buffer size, but 1 million is the max experience collected anyway
@@ -163,13 +170,21 @@ summary_name = results_dir + "/{}_{}_log"
 writer = SummaryWriter(summary_name.format(args.env, args.id))
 print("writer is ready")
 
+wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
+    "batch_size": args.batch_size,
+    "overshooting_distance" : args.overshooting_distance,
+    "episodes" : args.episodes,
+    "chunk_size" : args.chunk_size,
+    "planning_horizon" : args.planning_horizon,
+    "planning_discount" : args.discount,
+    "max_steps": args.max_steps,
+})
 
 #env = gym.make(args.env, render_mode='human' if args.render else None)
 env = GymMoreRedBalls(room_size=10)
 env = ActionSpaceWrapper(env, args.max_steps,new_action_space=3)
 env = FullyCustom(env, args.max_steps)
 #env = MaxStepsWrapper(env, args.max_steps)
-
 env = MaxStepsWrapper(env, args.max_steps, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth, new_action_space=3)
 
 
@@ -215,7 +230,6 @@ transition_model = TransitionModel(
     args.state_size,
     #env.action_size,
     int(env.action_space.n),
-
     args.hidden_size,
     args.embedding_size,
     args.dense_activation_function,
@@ -584,9 +598,14 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
             #torch.zeros(1, env.action_size, device=args.device),
             torch.zeros(1, int(env.action_space.n), device=args.device),
         )
+
+        episode_steps = 0  # 에피소드 내 스텝 수 초기화
+        episode_values = []  # 각 스텝에서의 value를 저장할 리스트
+
         pbar = tqdm(range(args.max_episode_length // args.action_repeat))
         for t in pbar:  #총 에피소드 길이를 repeat수로 나눠 action 취함
-            # print("step",t)
+            print("step",t)
+
             belief, posterior_state, action, next_observation, reward, done = update_belief_and_act(
                 args,
                 env,
@@ -601,6 +620,7 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
             )
             D.append(observation, action.cpu(), reward, done)
             total_reward += reward
+            episode_steps +=1
             if total_reward > 0.1 :
                 pass #env.env.env.env.max_steps : 300
             observation = next_observation
@@ -610,6 +630,16 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
                 pbar.close()
                 break
 
+            # wandb에 에피소드 성능 기록
+        wandb.log({
+            "episode": t,
+            "episode_steps": episode_steps,  # 에피소드 내 스텝 수 기록
+            "episode_reward " : total_reward,
+                #"episode_reward": total_reward.item(),  # 에피소드에서의 총 리워드 기록
+                #"mean_value": np.mean(episode_values),  # 에피소드에서의 평균 value 기록
+                #"max_value": np.max(episode_values),  # 에피소드에서의 최대 value 기록
+                #"min_value": np.min(episode_values)  # 에피소드에서의 최소 value 기록
+        }, step=metrics['steps'][-1])
         # Update and plot train reward metrics
         metrics['steps'].append(t + metrics['steps'][-1])
         metrics['episodes'].append(episode)
@@ -632,12 +662,19 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
         actor_model.eval()
         value_model.eval()
         # Initialise parallelised test environments
-        test_envs = EnvBatcher(
-            env,
-            (env, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth, args.max_steps),
-            {},
-            args.test_episodes,
-        )
+        # test_envs = EnvBatcher(
+        #     env,
+        #     (env, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth, args.max_steps),
+        #     {},
+        #     args.test_episodes,
+        # )
+
+        env = GymMoreRedBalls(room_size=10)
+        env = ActionSpaceWrapper(env, args.max_steps, new_action_space=3)
+        env = FullyCustom(env, args.max_steps)
+        # env = MaxStepsWrapper(env, args.max_steps)
+        test_envs = MaxStepsWrapper(env, args.max_steps, args.symbolic_env, args.seed, args.max_episode_length,
+                              args.action_repeat, args.bit_depth, new_action_space=3)
 
         with torch.no_grad():
             observation, total_rewards, video_frames = test_envs.reset(), np.zeros((args.test_episodes,)), []
@@ -658,7 +695,7 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
                     belief,
                     posterior_state,
                     action,
-                    observation.to(device=args.device),
+                    observation.to(device=args.device), #tuple인데 .to가 있는게 문제
                 )
                 total_rewards += reward.numpy()
                 if not args.symbolic_env:  # Collect real vs. predicted frames for video
@@ -672,6 +709,17 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
                 if done.sum().item() == args.test_episodes:
                     pbar.close()
                     break
+
+            # wandb에 에피소드 성능 기록
+            wandb.log({
+                        "test_step": t,
+                        #"episode_steps": episode_steps,  # 에피소드 내 스텝 수 기록
+                        "test_reward ": reward.numpy(),
+                        # "episode_reward": total_reward.item(),  # 에피소드에서의 총 리워드 기록
+                        # "mean_value": np.mean(episode_values),  # 에피소드에서의 평균 value 기록
+                        # "max_value": np.max(episode_values),  # 에피소드에서의 최대 value 기록
+                        # "min_value": np.min(episode_values)  # 에피소드에서의 최소 value 기록
+            }, step=metrics['steps'][-1])
 
         # Update and plot reward metrics (and write video if applicable) and save metrics
         metrics['test_episodes'].append(episode)
@@ -699,6 +747,8 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
         encoder.train()
         actor_model.train()
         value_model.train()
+
+
         # Close test environments
         test_envs.close()
 

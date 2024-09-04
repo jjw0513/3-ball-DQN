@@ -1,0 +1,53 @@
+{
+    "os": "Windows-10-10.0.19045-SP0",
+    "python": "3.8.19",
+    "heartbeatAt": "2024-08-14T08:10:07.555920",
+    "startedAt": "2024-08-14T08:10:05.375926",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "C:\\Users\\hail\\3-ball-DQN\\DQN\\DQN_3ball.py",
+    "codePathLocal": "DQN_3ball.py",
+    "codePath": "DQN\\DQN_3ball.py",
+    "git": {
+        "remote": "https://github.com/jjw0513/3-ball-DQN.git",
+        "commit": "d45b73cf0facd073fda01c561dc509efe539c44b"
+    },
+    "email": "jjw05130513022@gamil.com",
+    "root": "C:/Users/hail/3-ball-DQN",
+    "host": "Hail-1080ti-06",
+    "username": "hail",
+    "executable": "C:\\Users\\hail\\AppData\\Local\\anaconda3\\envs\\open\\python.exe",
+    "cpu_count": 8,
+    "cpu_count_logical": 16,
+    "cpu_freq": {
+        "current": 1200.0,
+        "min": 0.0,
+        "max": 2101.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 1200.0,
+            "min": 0.0,
+            "max": 2101.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 474.8566360473633,
+            "used": 158.9498519897461
+        }
+    },
+    "gpu": "NVIDIA GeForce GTX 1080 Ti",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce GTX 1080 Ti",
+            "memory_total": 11811160064
+        }
+    ],
+    "memory": {
+        "total": 63.846744537353516
+    }
+}
