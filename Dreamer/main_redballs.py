@@ -43,13 +43,8 @@ parser.add_argument('--wandb-entity', type=str, default='hails', help='WandB ent
 
 
 parser.add_argument('--symbolic-env', action='store_true', help='Symbolic features')
-<<<<<<< HEAD
-#parser.add_argument('--max-episode-length', type=int, default=1000, metavar='T', help='Max episode length')
-parser.add_argument('--max-episode-length', type=int, default=10, metavar='T', help='Max episode length')
-=======
 parser.add_argument('--max-episode-length', type=int, default=1000, metavar='T', help='Max episode length')
 #parser.add_argument('--max-episode-length', type=int, default=5, metavar='T', help='Max episode length')
->>>>>>> 6fd364b (last_ls)
 parser.add_argument(
     '--experience-size', type=int, default=1000000, metavar='D', help='Experience replay size'
 )  # Original implementation has an unlimited buffer size, but 1 million is the max experience collected anyway
@@ -192,10 +187,6 @@ wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
 env = GymMoreRedBalls(room_size=10)
 env = ActionSpaceWrapper(env, args.max_steps,new_action_space=3)
 env = FullyCustom(env, args.max_steps)
-<<<<<<< HEAD
-#env = MaxStepsWrapper(env, args.max_steps)
-=======
->>>>>>> 6fd364b (last_ls)
 env = MaxStepsWrapper(env, args.max_steps, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth, new_action_space=3)
 
 
@@ -615,9 +606,9 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
     lineplot(metrics['episodes'][-len(metrics['value_loss']) :], metrics['value_loss'], 'value_loss', results_dir)
 
     # Data collection
-    print("Data collection") ##여기까지 완성
+    print("Data collection")
     with torch.no_grad():
-        observation, total_reward = env.reset(), 0 #env.env.env.env.max_steps : 300
+        observation, total_reward = env.reset(), 0
         belief, posterior_state, action = (
             torch.zeros(1, args.belief_size, device=args.device),
             torch.zeros(1, args.state_size, device=args.device),
@@ -627,17 +618,10 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
 
         episode_steps = 0  # 에피소드 내 스텝 수 초기화
         episode_values = []  # 각 스텝에서의 value를 저장할 리스트
-<<<<<<< HEAD
-
-        pbar = tqdm(range(args.max_episode_length // args.action_repeat))
-        for t in pbar:  #총 에피소드 길이를 repeat수로 나눠 action 취함
-            print("step",t)
-=======
         #pbar = tqdm(range(args.max_episode_length // args.action_repeat))
         pbar = tqdm(range(args.max_steps // args.action_repeat))
         print("pbar : ", pbar)
         for t in pbar:  #총 에피소드 길이를 repeat수로 나눠 action 취
->>>>>>> 6fd364b (last_ls)
 
             belief, posterior_state, action, next_observation, reward, done = update_belief_and_act(
                 args,
@@ -663,18 +647,6 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
                 pbar.close()
                 break
 
-<<<<<<< HEAD
-            # wandb에 에피소드 성능 기록
-        wandb.log({
-            "episode": t,
-            "episode_steps": episode_steps,  # 에피소드 내 스텝 수 기록
-            "episode_reward " : total_reward,
-                #"episode_reward": total_reward.item(),  # 에피소드에서의 총 리워드 기록
-                #"mean_value": np.mean(episode_values),  # 에피소드에서의 평균 value 기록
-                #"max_value": np.max(episode_values),  # 에피소드에서의 최대 value 기록
-                #"min_value": np.min(episode_values)  # 에피소드에서의 최소 value 기록
-        }, step=metrics['steps'][-1])
-=======
         #     # wandb에 에피소드 성능 기록
         # wandb.log({
         #     "episode": episode,
@@ -683,7 +655,6 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
         #     "mean_value": np.mean(episode_values),
         # }, step=episode)
 
->>>>>>> 6fd364b (last_ls)
         # Update and plot train reward metrics
         metrics['steps'].append(t + metrics['steps'][-1])
         metrics['episodes'].append(episode)
@@ -694,109 +665,6 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
             'train_rewards',
             results_dir,
         )
-<<<<<<< HEAD
-
-    # Test model
-    print("Test model")
-    if episode % args.test_interval == 0:
-        # Set models to eval mode
-        transition_model.eval()
-        observation_model.eval()
-        reward_model.eval()
-        encoder.eval()
-        actor_model.eval()
-        value_model.eval()
-        # Initialise parallelised test environments
-        # test_envs = EnvBatcher(
-        #     env,
-        #     (env, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth, args.max_steps),
-        #     {},
-        #     args.test_episodes,
-        # )
-
-        env = GymMoreRedBalls(room_size=10)
-        env = ActionSpaceWrapper(env, args.max_steps, new_action_space=3)
-        env = FullyCustom(env, args.max_steps)
-        # env = MaxStepsWrapper(env, args.max_steps)
-        test_envs = MaxStepsWrapper(env, args.max_steps, args.symbolic_env, args.seed, args.max_episode_length,
-                              args.action_repeat, args.bit_depth, new_action_space=3)
-
-        with torch.no_grad():
-            observation, total_rewards, video_frames = test_envs.reset(), np.zeros((args.test_episodes,)), []
-            belief, posterior_state, action = (
-                torch.zeros(args.test_episodes, args.belief_size, device=args.device),
-                torch.zeros(args.test_episodes, args.state_size, device=args.device),
-                #torch.zeros(args.test_episodes, env.action_size, device=args.device),
-                torch.zeros(args.test_episodes, int(env.action_space.n), device=args.device),
-            )
-            pbar = tqdm(range(args.max_episode_length // args.action_repeat))
-            for t in pbar:
-                belief, posterior_state, action, next_observation, reward, done = update_belief_and_act(
-                    args,
-                    test_envs,
-                    planner,
-                    transition_model,
-                    encoder,
-                    belief,
-                    posterior_state,
-                    action,
-                    observation.to(device=args.device), #tuple인데 .to가 있는게 문제
-                )
-                total_rewards += reward.numpy()
-                if not args.symbolic_env:  # Collect real vs. predicted frames for video
-                    video_frames.append(
-                        make_grid(
-                            torch.cat([observation, observation_model(belief, posterior_state).cpu()], dim=3) + 0.5,
-                            nrow=5,
-                        ).numpy()
-                    )  # Decentre
-                observation = next_observation
-                if done.sum().item() == args.test_episodes:
-                    pbar.close()
-                    break
-
-            # wandb에 에피소드 성능 기록
-            wandb.log({
-                        "test_step": t,
-                        #"episode_steps": episode_steps,  # 에피소드 내 스텝 수 기록
-                        "test_reward ": reward.numpy(),
-                        # "episode_reward": total_reward.item(),  # 에피소드에서의 총 리워드 기록
-                        # "mean_value": np.mean(episode_values),  # 에피소드에서의 평균 value 기록
-                        # "max_value": np.max(episode_values),  # 에피소드에서의 최대 value 기록
-                        # "min_value": np.min(episode_values)  # 에피소드에서의 최소 value 기록
-            }, step=metrics['steps'][-1])
-
-        # Update and plot reward metrics (and write video if applicable) and save metrics
-        metrics['test_episodes'].append(episode)
-        metrics['test_rewards'].append(total_rewards.tolist())
-        lineplot(metrics['test_episodes'], metrics['test_rewards'], 'test_rewards', results_dir)
-        lineplot(
-            np.asarray(metrics['steps'])[np.asarray(metrics['test_episodes']) - 1],
-            metrics['test_rewards'],
-            'test_rewards_steps',
-            results_dir,
-            xaxis='step',
-        )
-        if not args.symbolic_env:
-            episode_str = str(episode).zfill(len(str(args.episodes)))
-            write_video(video_frames, 'test_episode_%s' % episode_str, results_dir)  # Lossy compression
-            save_image(
-                torch.as_tensor(video_frames[-1]), os.path.join(results_dir, 'test_episode_%s.png' % episode_str)
-            )
-        torch.save(metrics, os.path.join(results_dir, 'metrics.pth'))
-
-        # Set models to train mode
-        transition_model.train()
-        observation_model.train()
-        reward_model.train()
-        encoder.train()
-        actor_model.train()
-        value_model.train()
-
-
-        # Close test environments
-        test_envs.close()
-=======
         # wandb에 에피소드 성능 기록
         wandb.log({
             "episode": episode,
@@ -907,7 +775,6 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
     #
     #     # Close test environments
     #     test_envs.close()
->>>>>>> 6fd364b (last_ls)
 
     writer.add_scalar("train_reward", metrics['train_rewards'][-1], metrics['steps'][-1])
     writer.add_scalar("train/episode_reward", metrics['train_rewards'][-1], metrics['steps'][-1] * args.action_repeat)
