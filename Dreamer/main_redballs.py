@@ -202,6 +202,7 @@ elif not args.test:
     D = ExperienceReplay(
         args.experience_size, env.observation_space['image'].shape, env.action_space.n, args.bit_depth, args.device
     )
+
     # Initialise dataset D with S random seed episodes
     for s in range(1, args.seed_episodes + 1):
         done, t = False, 0
