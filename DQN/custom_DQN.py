@@ -27,24 +27,25 @@ parser.add_argument('--episodes', type=int, default=1000, metavar='E', help='Tot
 parser.add_argument('--env', type=str, default='GymMoreRedBalls-v0', help='Gym environment')
 #parser.add_argument('--env', type=str, default='MiniGrid-Empty-8x8-v0', help='Gym environment')
 parser.add_argument('--render', action='store_true', default=True, help='Render environment')
-parser.add_argument('--wandb-project', type=str, default='3ball_CAP', help='WandB project name')
-parser.add_argument('--wandb-entity', type=str, default='hails', help='WandB entity name')
+
+# parser.add_argument('--wandb-project', type=str, default='3ball_CAP', help='WandB project name')
+# parser.add_argument('--wandb-entity', type=str, default='hails', help='WandB entity name')
 
 args = parser.parse_args()
 
 
 # Initialize wandb and log hyperparameters
-wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
-    "batch_size": args.batch_size,
-    "learning_rate": args.learning_rate,
-    "epsilon_start": args.epsilon_start,
-    "epsilon_end": args.epsilon_end,
-    "epsilon_decay": args.epsilon_decay,
-    "replay_memory_size": args.replay_memory_size,
-    "gamma": args.gamma,
-    "target_update_iter": args.target_update_iter,
-    "max_steps": args.max_steps,
-})
+# wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
+#     "batch_size": args.batch_size,
+#     "learning_rate": args.learning_rate,
+#     "epsilon_start": args.epsilon_start,
+#     "epsilon_end": args.epsilon_end,
+#     "epsilon_decay": args.epsilon_decay,
+#     "replay_memory_size": args.replay_memory_size,
+#     "gamma": args.gamma,
+#     "target_update_iter": args.target_update_iter,
+#     "max_steps": args.max_steps,
+# })
 
 # Create and wrap the environment
 #env = gym.make(args.env, render_mode='human' if args.render else None)
@@ -159,8 +160,8 @@ steps_done = 0
 #        return obs['image'].flatten()
 #    else:
 #        return obs.flatten()
-
 for episode in range(args.episodes):
+
     obs = env.reset()
     #s = preprocess_state(obs[0])  # Initial state
     s = obs
