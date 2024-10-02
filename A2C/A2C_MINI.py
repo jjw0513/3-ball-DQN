@@ -14,7 +14,11 @@ from envs.wrapper import MaxStepsWrapper,ActionSpaceWrapper,ObservationWrapper,F
 
 #wandb.init(project="minigrid", sync_tensorboard=True, monitor_gym=True, save_code=True)
 parser = argparse.ArgumentParser(description='A2C')
-parser.add_argument('--max-steps', type=int, default=5000, metavar='MS', help='Maximum number of steps per episode')
+parser.add_argument('--max-steps', type=int, default=1000, metavar='MS', help='Maximum number of steps per episode')
+parser.add_argument('--wandb-project', type=str, default='3ball_CAP', help='WandB project name')
+parser.add_argument('--wandb-entity', type=str, default='hails', help='WandB entity name')
+
+
 args = parser.parse_args()
 lr = 0.0001
 gamma = 0.9
@@ -22,6 +26,18 @@ hidden = 32
 entropy_coef = 0.01
 value_loss_coef = 0.5
 max_grad_norm = 0.5
+total_episode = 1000
+wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
+    "episode" : total_episode,
+    "learning_rate": lr,
+   "hidden_size" : hidden,
+
+    "gamma": gamma,
+
+    "max_steps": args.max_steps,
+})
+
+
 #env = gym.make('MiniGrid-MemoryS9-v0', render_mode="rgb")
 env = GymMoreRedBalls(room_size=10, render_mode="render_mode")
 env = ActionSpaceWrapper(env, args.max_steps,new_action_space=3)
@@ -30,7 +46,7 @@ env = FullyCustom(env, args.max_steps)
 env = MaxStepsWrapper(env, args.max_steps)
 
 device = th.device("cuda" if th.cuda.is_available() else "cpu")
-
+print("device is : ", device)
 n_action = 3
 
 # MiniGrid 환경의 observation_space는 Dict 타입일 수 있음
@@ -165,7 +181,7 @@ class AC():
 
 ac = AC()
 
-for episode in  range(10000):
+for episode in range(total_episode):
     start_time = time.time()  # 에피소드 시작 시간
     s = env.reset()
     step = 0
@@ -205,19 +221,17 @@ for episode in  range(10000):
 
     episode_loss = np.mean(ac.loss_history[-step:]) if step > 0 else 0
     duration = time.time() - start_time  # 에피소드 소요 시간
-    '''
+
     wandb.log({
         "episode": episode,
         "reward": total_reward,
         "average_loss": episode_loss,
         "average_value": episode_value,
-        "duration": duration,  # 에피소드 소요 시간 기록
+        "steps": step,  # 에피소드 소요 시간 기록
     }, step=episode)
-    '''
 
 
-th.save(ac.actor.state_dict(), "actor_model_mini.pth")
-th.save(ac.critic.state_dict(), "critic_model_mini.pth")
+
 
 env.close()
-#wandb.finish()
+wandb.finish()

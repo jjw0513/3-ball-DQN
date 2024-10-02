@@ -71,11 +71,12 @@ parser.add_argument('--state-size', type=int, default=30, metavar='Z', help='Sta
 parser.add_argument('--action-repeat', type=int, default=1, metavar='R', help='Action repeat')
 parser.add_argument('--action-noise', type=float, default=0.3, metavar='ε', help='Action noise')
 parser.add_argument('--episodes', type=int, default=1000, metavar='E', help='Total number of episodes')
-parser.add_argument('--seed-episodes', type=int, default=5, metavar='S', help='Seed episodes')
+parser.add_argument('--seed-episodes', type=int, default=10, metavar='S', help='Seed episodes')
+#parser.add_argument('--seed-episodes', type=int, default=5, metavar='S', help='Seed episodes')
 parser.add_argument('--collect-interval', type=int, default=100, metavar='C', help='Collect interval')
 parser.add_argument('--batch-size', type=int, default=50, metavar='B', help='Batch size')
 parser.add_argument('--chunk-size', type=int, default=50, metavar='L', help='Chunk size')
-parser.add_argument('--max-steps', type=int, default=5000, metavar='MS', help='Maximum number of steps per episode')
+parser.add_argument('--max-steps', type=int, default=100, metavar='MS', help='Maximum number of steps per episode')
 parser.add_argument(
     '--worldmodel-LogProbLoss',
     action='store_true',
@@ -184,7 +185,7 @@ wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
 })
 
 #env = gym.make(args.env, render_mode='human' if args.render else None)
-env = GymMoreRedBalls(room_size=10)
+env = GymMoreRedBalls(room_size=10,render_mode="human")
 env = ActionSpaceWrapper(env, args.max_steps,new_action_space=3)
 env = FullyCustom(env, args.max_steps)
 env = MaxStepsWrapper(env, args.max_steps, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth, new_action_space=3)
@@ -223,6 +224,7 @@ elif not args.test:
             t += 1
         metrics['steps'].append(t * args.action_repeat + (0 if len(metrics['steps']) == 0 else metrics['steps'][-1]))
         metrics['episodes'].append(s)
+
 print("experience replay buffer is ready")
 
 
