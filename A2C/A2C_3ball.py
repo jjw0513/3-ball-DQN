@@ -50,41 +50,4 @@ model = A2C(
 )
 
 
-episode_rewards = []
-
-
-for episode in range(wandb.config.max_episodes):
-    obs = env.reset()
-    step = 0
-    total_reward = 0
-    done = False
-
-    while not done and step < wandb.config.max_steps:
-        action, _ = model.predict(obs)
-        obs, reward, terminated, truncated = env.step(action)
-
-        # 보상 업데이트
-        total_reward += reward
-
-        # 로그 출력
-        print("Current obs:", obs)
-        print("Action taken:", action)
-        print("Reward received:", reward)
-        print("Terminated:", terminated)
-
-        if terminated or truncated:
-            done = True
-
-        step += 1
-
-
-    episode_rewards.append(total_reward)
-
-
-    wandb.log({"episode": episode, "reward": total_reward, "steps": step}, step=episode)
-
-    # 모델 학습
-    model.learn(total_timesteps=1, reset_num_timesteps=False)
-
-# Save the trained model
-model.save("A2C_test")
+model.learn()
