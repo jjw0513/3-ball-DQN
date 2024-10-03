@@ -16,7 +16,7 @@ from env import CONTROL_SUITE_ENVS, GYM_ENVS, Env, EnvBatcher
 from memory import ExperienceReplay
 from models import ActorModel, Encoder, ObservationModel, RewardModel, TransitionModel, ValueModel, bottle
 from planner import MPCPlanner
-from utils import FreezeParameters, imagine_ahead, lambda_return, lineplot, write_video
+from Dreamer.utils import FreezeParameters, imagine_ahead, lambda_return, lineplot, write_video
 
 # Hyperparameters
 parser = argparse.ArgumentParser(description='PlaNet or Dreamer')
