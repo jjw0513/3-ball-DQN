@@ -15,7 +15,7 @@ from minigrid.core.roomgrid import RoomGrid
 from minigrid.wrappers import FullyObsWrapper
 from abc import ABC, abstractmethod
 import numpy as np
-
+import random
 
 class SeqInOrderInstr(Instr, ABC):
     """
@@ -128,7 +128,6 @@ class GymMoreRedBalls(RoomGridLevel):
 
         self.num_dists = num_dists
         self.num_objs = num_objs
-
         super().__init__(num_rows=1, num_cols=1, room_size=room_size, **kwargs)
 
         #일단 max_step 임의 지정
@@ -137,8 +136,8 @@ class GymMoreRedBalls(RoomGridLevel):
     def gen_mission(self):
         self.place_agent()
 
-        colors = ['red', 'green', 'blue']
-
+        #colors = ['red', 'green', 'blue','white']
+        colors = ['red', 'green', 'blue', 'yellow']
         self.objs = []
         for i, c in enumerate(colors):
             obj, _ = self.add_object(0, 0, "ball", c)
@@ -152,14 +151,20 @@ class GymMoreRedBalls(RoomGridLevel):
         self.instrs = self.gen_instr_inorder()
 
     def gen_instr_inorder(self):
+        # 인덱스를 무작위로 섞음
+        indices = list(range(len(self.objs)))
+        random.shuffle(indices)
 
-        instr_red = GoToInstr(ObjDesc(self.objs[0].type, self.objs[0].color))
-        instr_green = GoToInstr(ObjDesc(self.objs[1].type, self.objs[1].color))
-        instr_blue = GoToInstr(ObjDesc(self.objs[2].type, self.objs[2].color))
+    # 무작위로 섞인 인덱스 순서에 따라 instr 생성
+        instr_list = []
+        for idx in indices:
+            instr_list.append(GoToInstr(ObjDesc(self.objs[idx].type, self.objs[idx].color)))
 
-        instr_ = InOrderInstr([instr_red, instr_green, instr_blue])
+    # 무작위로 섞인 순서대로 InOrderInstr를 생성
+        instr_ = InOrderInstr(instr_list)
 
         return instr_
+
     def validate_instrs(self, instr):
         """
         Perform some validation on the generated instructions
@@ -284,7 +289,7 @@ class GymMoreRedBalls(RoomGridLevel):
 
 if __name__ == "__main__":
 
-    env = GymMoreRedBalls(room_size=10,render_mode='rgb_array')
+    env = GymMoreRedBalls(room_size=10,render_mode='human')
     env.reset(seed=123)
     env.render()
     print("Test")

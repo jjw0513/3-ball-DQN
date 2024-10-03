@@ -16,8 +16,7 @@ from tqdm import tqdm
 from memory import ExperienceReplay_nosym as ExperienceReplay
 from models import ActorModel, Encoder, ObservationModel, RewardModel, TransitionModel, ValueModel, bottle
 from planner import MPCPlanner
-from utils import FreezeParameters, imagine_ahead, lambda_return, lineplot, write_video
-import gymnasium as gym
+from Dreamer.utils import FreezeParameters, imagine_ahead, lambda_return, lineplot, write_video
 from envs.GymMoreRedBalls import GymMoreRedBalls
 from envs.wrapper import MaxStepsWrapper
 from envs.wrapper import FullyCustom
@@ -43,8 +42,10 @@ parser.add_argument('--wandb-entity', type=str, default='hails', help='WandB ent
 
 
 parser.add_argument('--symbolic-env', action='store_true', help='Symbolic features')
+
 parser.add_argument('--max-episode-length', type=int, default=1000, metavar='T', help='Max episode length')
 #parser.add_argument('--max-episode-length', type=int, default=5, metavar='T', help='Max episode length')
+
 parser.add_argument(
     '--experience-size', type=int, default=1000000, metavar='D', help='Experience replay size'
 )  # Original implementation has an unlimited buffer size, but 1 million is the max experience collected anyway
@@ -70,13 +71,15 @@ parser.add_argument('--belief-size', type=int, default=200, metavar='H', help='B
 parser.add_argument('--state-size', type=int, default=30, metavar='Z', help='State/latent size')
 parser.add_argument('--action-repeat', type=int, default=1, metavar='R', help='Action repeat')
 parser.add_argument('--action-noise', type=float, default=0.3, metavar='ε', help='Action noise')
-parser.add_argument('--episodes', type=int, default=1000, metavar='E', help='Total number of episodes')
-parser.add_argument('--seed-episodes', type=int, default=10, metavar='S', help='Seed episodes')
-#parser.add_argument('--seed-episodes', type=int, default=5, metavar='S', help='Seed episodes')
+
+#parser.add_argument('--episodes', type=int, default=1000, metavar='E', help='Total number of episodes')
+parser.add_argument('--episodes', type=int, default=10, metavar='E', help='Total number of episodes')
+
+parser.add_argument('--seed-episodes', type=int, default=5, metavar='S', help='Seed episodes')
 parser.add_argument('--collect-interval', type=int, default=100, metavar='C', help='Collect interval')
 parser.add_argument('--batch-size', type=int, default=50, metavar='B', help='Batch size')
 parser.add_argument('--chunk-size', type=int, default=50, metavar='L', help='Chunk size')
-parser.add_argument('--max-steps', type=int, default=100, metavar='MS', help='Maximum number of steps per episode')
+parser.add_argument('--max-steps', type=int, default=5000, metavar='MS', help='Maximum number of steps per episode')
 parser.add_argument(
     '--worldmodel-LogProbLoss',
     action='store_true',
@@ -131,6 +134,7 @@ parser.add_argument('--test-interval', type=int, default=25, metavar='I', help='
 #parser.add_argument('--test-interval', type=int, default=10, metavar='I', help='Test interval (episodes)')
 
 parser.add_argument('--test-episodes', type=int, default=5, metavar='E', help='Number of test episodes')
+
 parser.add_argument('--checkpoint-interval', type=int, default=50, metavar='I', help='Checkpoint interval (episodes)')
 parser.add_argument('--checkpoint-experience', action='store_true', help='Checkpoint experience replay')
 parser.add_argument('--models', type=str, default='', metavar='M', help='Load model checkpoint')
@@ -174,6 +178,7 @@ summary_name = results_dir + "/{}_{}_log"
 writer = SummaryWriter(summary_name.format(args.env, args.id))
 print("writer is ready")
 
+
 wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
     "batch_size": args.batch_size,
     "overshooting_distance" : args.overshooting_distance,
@@ -184,10 +189,12 @@ wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
     "max_steps": args.max_steps,
 })
 
+
 #env = gym.make(args.env, render_mode='human' if args.render else None)
-env = GymMoreRedBalls(room_size=10,render_mode="human")
+env = GymMoreRedBalls(room_size=20)
 env = ActionSpaceWrapper(env, args.max_steps,new_action_space=3)
 env = FullyCustom(env, args.max_steps)
+
 env = MaxStepsWrapper(env, args.max_steps, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth, new_action_space=3)
 
 
@@ -203,7 +210,6 @@ elif not args.test:
     D = ExperienceReplay(
         args.experience_size, env.observation_space['image'].shape, env.action_space.n, args.bit_depth, args.device
     )
-
     # Initialise dataset D with S random seed episodes
     for s in range(1, args.seed_episodes + 1):
         done, t = False, 0
@@ -225,7 +231,6 @@ elif not args.test:
             t += 1
         metrics['steps'].append(t * args.action_repeat + (0 if len(metrics['steps']) == 0 else metrics['steps'][-1]))
         metrics['episodes'].append(s)
-
 print("experience replay buffer is ready")
 
 
@@ -609,9 +614,9 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
     lineplot(metrics['episodes'][-len(metrics['value_loss']) :], metrics['value_loss'], 'value_loss', results_dir)
 
     # Data collection
-    print("Data collection")
+    print("Data collection") ##여기까지 완성
     with torch.no_grad():
-        observation, total_reward = env.reset(), 0
+        observation, total_reward = env.reset(), 0 #env.env.env.env.max_steps : 300
         belief, posterior_state, action = (
             torch.zeros(1, args.belief_size, device=args.device),
             torch.zeros(1, args.state_size, device=args.device),
@@ -621,10 +626,12 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
 
         episode_steps = 0  # 에피소드 내 스텝 수 초기화
         episode_values = []  # 각 스텝에서의 value를 저장할 리스트
+
         #pbar = tqdm(range(args.max_episode_length // args.action_repeat))
         pbar = tqdm(range(args.max_steps // args.action_repeat))
         print("pbar : ", pbar)
         for t in pbar:  #총 에피소드 길이를 repeat수로 나눠 action 취
+
 
             belief, posterior_state, action, next_observation, reward, done = update_belief_and_act(
                 args,
@@ -650,13 +657,14 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
                 pbar.close()
                 break
 
-        #     # wandb에 에피소드 성능 기록
-        # wandb.log({
-        #     "episode": episode,
-        #     "steps": episode_steps,
-        #     "reward": total_reward,
-        #     "mean_value": np.mean(episode_values),
-        # }, step=episode)
+
+                # Log episode performance metrics in wandb
+            wandb.log({
+                    "episode": episode,
+                    "steps": episode_steps,
+                    "reward": reward,
+                    "mean_value": np.mean(episode_values),
+            }, step=episode)
 
         # Update and plot train reward metrics
         metrics['steps'].append(t + metrics['steps'][-1])
@@ -668,13 +676,7 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
             'train_rewards',
             results_dir,
         )
-        # wandb에 에피소드 성능 기록
-        wandb.log({
-            "episode": episode,
-            "steps": episode_steps,
-            "reward": total_reward,
-            "mean_value": np.mean(episode_values),
-        }, step=episode)
+
     # # Test model
     # print("Test model")
     # if episode % args.test_interval == 0:
@@ -713,6 +715,7 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
     #             #model.py의 107번째 컴파일 찍기 바로
     #             #belif : torch.Size([5, 200]), observation : torch.Size([1, 3, 64, 64])
     #
+
     #             belief, posterior_state, action, next_observation, reward, done = update_belief_and_act(
     #                 args,
     #                 test_envs,
@@ -778,6 +781,7 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
     #
     #     # Close test environments
     #     test_envs.close()
+
 
     writer.add_scalar("train_reward", metrics['train_rewards'][-1], metrics['steps'][-1])
     writer.add_scalar("train/episode_reward", metrics['train_rewards'][-1], metrics['steps'][-1] * args.action_repeat)
