@@ -14,7 +14,7 @@ from envs.wrapper import MaxStepsWrapper
 from envs.wrapper import FullyCustom
 # Hyperparameters
 parser = argparse.ArgumentParser(description='DQN Training for GymMoreRedBalls')
-parser.add_argument('--disable-cuda', action='store_true', help='Disable CUDA')
+#parser.add_argument('--disable-cuda', action='store_true', help='Disable CUDA')
 
 parser.add_argument('--batch-size', type=int, default=50, metavar='B', help='Batch size')
 parser.add_argument('--learning-rate', type=float, default=0.0001, metavar='LR', help='Learning rate')
@@ -54,7 +54,7 @@ wandb.init(project=args.wandb_project, entity=args.wandb_entity, name=args.run_n
 env = GymMoreRedBalls(room_size=20, render_mode="rgb_array")
 env = FullyCustom(env, args.max_steps)
 env = MaxStepsWrapper(env, args.max_steps)
-device = th.device("cuda" if th.cuda.is_available() and not args.disable_cuda else "cpu")
+device = th.device("cuda" if th.cuda.is_available() else "cpu")
 n_action = 3
 
 if isinstance(env.observation_space, gym.spaces.Dict):
@@ -118,7 +118,7 @@ class DQN:
         if sample > eps_threshold:
             with th.no_grad():
                 state = state.unsqueeze(0)  # 2차원 텐서로 변환
-                return self.eval_q_net(state.to('cpu')).max(1)[1].view(1, 1)
+                return self.eval_q_net(state.to(device)).max(1)[1].view(1, 1)
         else:
             return th.tensor([[random.randrange(n_action)]], device=device, dtype=th.long)
 

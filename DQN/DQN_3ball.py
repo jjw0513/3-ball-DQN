@@ -14,8 +14,6 @@ from envs.wrapper import MaxStepsWrapper
 from envs.wrapper import FullyCustom
 # Hyperparameters
 parser = argparse.ArgumentParser(description='DQN Training for GymMoreRedBalls')
-parser.add_argument('--disable-cuda', action='store_true', help='Disable CUDA')
-
 parser.add_argument('--batch-size', type=int, default=50, metavar='B', help='Batch size')
 parser.add_argument('--learning-rate', type=float, default=0.0001, metavar='LR', help='Learning rate')
 parser.add_argument('--epsilon-start', type=float, default=1, metavar='ES', help='Start of epsilon')
@@ -24,9 +22,7 @@ parser.add_argument('--epsilon-decay', type=int, default=200, metavar='ED', help
 parser.add_argument('--replay-memory-size', type=int, default=10000, metavar='RMS', help='Replay memory size')
 parser.add_argument('--gamma', type=float, default=0.9, metavar='G', help='Discount factor')
 parser.add_argument('--target-update-iter', type=int, default=200, metavar='TUI', help='Target network update interval')
-
 parser.add_argument('--max-steps', type=int, default=500, metavar='MS', help='Maximum number of steps per episode')
-
 parser.add_argument('--episodes', type=int, default=1000, metavar='E', help='Total number of episodes')
 parser.add_argument('--env', type=str, default='GymMoreRedBalls-v0', help='Gym environment')
 
@@ -34,9 +30,9 @@ parser.add_argument('--render', action='store_true', default=True, help='Render 
 parser.add_argument('--wandb-project', type=str, default='3ball_CAP', help='WandB project name')
 parser.add_argument('--wandb-entity', type=str, default='hails', help='WandB entity name')
 
-#parser.add_argument('--disable-cuda', action="store_true", default=False, help="Disable CUDA if available")
 args = parser.parse_args()
 
+'''
 # Initialize wandb and log hyperparameters
 wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
     "batch_size": args.batch_size,
@@ -49,13 +45,13 @@ wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
     "target_update_iter": args.target_update_iter,
     "max_steps": args.max_steps,
 })
-
+'''
 # Create and wrap the environment
 #env = gym.make(args.env, render_mode='human' if args.render else None)
 env = GymMoreRedBalls(room_size=20, render_mode="human")
 env = FullyCustom(env, args.max_steps)
 env = MaxStepsWrapper(env, args.max_steps)
-device = th.device("cuda" if th.cuda.is_available()  else "cpu")
+device = th.device("cuda" if th.cuda.is_available() else "cpu")
 n_action = 3
 
 if isinstance(env.observation_space, gym.spaces.Dict):
@@ -114,13 +110,12 @@ class DQN:
     def select_action(self, state):
         global steps_done
         sample = random.random()
-        eps_threshold = args.epsilon_end + (args.epsilon_start - args.epsilon_end) * math.exp(
-            -1. * steps_done / args.epsilon_decay)
+        eps_threshold = args.epsilon_end + (args.epsilon_start - args.epsilon_end) * math.exp(-1. * steps_done / args.epsilon_decay)
         steps_done += 1
         if sample > eps_threshold:
             with th.no_grad():
-                state = state.unsqueeze(0).to(device)  # 수정: state를 GPU로 전송
-                return self.eval_q_net(state).max(1)[1].view(1, 1)
+                state = state.unsqueeze(0)  # 2차원 텐서로 변환
+                return self.eval_q_net(state.to(device)).max(1)[1].view(1, 1)
         else:
             return th.tensor([[random.randrange(n_action)]], device=device, dtype=th.long)
 
@@ -197,7 +192,7 @@ for episode in range(args.episodes):
 
     episode_loss = np.mean(dqn.loss_history[-step:]) if step > 0 else 0
     avg_q_value = th.mean(dqn.eval_q_net(th.FloatTensor([s]).to(device))).item()
-
+'''
     wandb.log({
          "episode": episode,
          "reward": total_reward,
@@ -205,9 +200,9 @@ for episode in range(args.episodes):
         "avg_q_value": avg_q_value,
         "steps": step
      },step=episode)
-
+'''
 th.save(dqn.eval_q_net.state_dict(), "dqn_eval_q_net_min.pth")
 th.save(dqn.target_q_net.state_dict(), "dqn_target_q_net_min.pth")
 
 env.close()
-wandb.finish()
+#wandb.finish()
