@@ -29,7 +29,7 @@ parser.add_argument('--env', type=str, default='GymMoreRedBalls-v0', help='Gym e
 parser.add_argument('--render', action='store_true', default=True, help='Render environment')
 parser.add_argument('--wandb-project', type=str, default='3ball_CAP', help='WandB project name')
 parser.add_argument('--wandb-entity', type=str, default='hails', help='WandB entity name')
-parser.add_argument('--run-name', type=str, default='DQN_20x20_500', help='WandB run name')
+parser.add_argument('--run-name', type=str, default='DQN_20x20_5000', help='WandB run name')
 
 args = parser.parse_args()
 
