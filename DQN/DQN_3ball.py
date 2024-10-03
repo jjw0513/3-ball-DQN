@@ -14,6 +14,8 @@ from envs.wrapper import MaxStepsWrapper
 from envs.wrapper import FullyCustom
 # Hyperparameters
 parser = argparse.ArgumentParser(description='DQN Training for GymMoreRedBalls')
+parser.add_argument('--disable-cuda', action='store_true', help='Disable CUDA')
+
 parser.add_argument('--batch-size', type=int, default=50, metavar='B', help='Batch size')
 parser.add_argument('--learning-rate', type=float, default=0.0001, metavar='LR', help='Learning rate')
 parser.add_argument('--epsilon-start', type=float, default=1, metavar='ES', help='Start of epsilon')
