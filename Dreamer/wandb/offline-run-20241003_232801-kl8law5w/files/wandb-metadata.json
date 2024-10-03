@@ -1,0 +1,45 @@
+{
+    "os": "Windows-10-10.0.19045-SP0",
+    "python": "3.8.19",
+    "heartbeatAt": "2024-10-03T14:28:01.860500",
+    "startedAt": "2024-10-03T14:28:01.318529",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "Dreamer_20x20_5000.py",
+    "codePathLocal": "Dreamer_20x20_5000.py",
+    "codePath": "Dreamer\\Dreamer_20x20_5000.py",
+    "git": {
+        "remote": "https://github.com/jjw0513/3-ball-DQN.git",
+        "commit": "ac75843660801f0de32525e2ee99b39cb6226cc8"
+    },
+    "email": "jjw05130513022@gmail.com",
+    "root": "C:/Users/A/open_ai/3-ball-DQN",
+    "host": "DESKTOP-ASQSSOQ",
+    "username": "jaewoo",
+    "executable": "C:\\Users\\A\\anaconda3\\envs\\rlproj\\python.exe",
+    "cpu_count": 4,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 2419.0,
+        "min": 0.0,
+        "max": 2419.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2419.0,
+            "min": 0.0,
+            "max": 2419.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 218.41210556030273,
+            "used": 194.46414947509766
+        }
+    },
+    "memory": {
+        "total": 15.730644226074219
+    }
+}
