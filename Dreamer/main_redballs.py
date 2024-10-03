@@ -42,13 +42,10 @@ parser.add_argument('--wandb-entity', type=str, default='hails', help='WandB ent
 
 
 parser.add_argument('--symbolic-env', action='store_true', help='Symbolic features')
-<<<<<<< HEAD
-#parser.add_argument('--max-episode-length', type=int, default=1000, metavar='T', help='Max episode length')
-parser.add_argument('--max-episode-length', type=int, default=10, metavar='T', help='Max episode length')
-=======
+
 parser.add_argument('--max-episode-length', type=int, default=1000, metavar='T', help='Max episode length')
 #parser.add_argument('--max-episode-length', type=int, default=5, metavar='T', help='Max episode length')
->>>>>>> 6fd364b8fdad3960076a2662a20e1ad77ccfa510
+
 parser.add_argument(
     '--experience-size', type=int, default=1000000, metavar='D', help='Experience replay size'
 )  # Original implementation has an unlimited buffer size, but 1 million is the max experience collected anyway
@@ -133,17 +130,12 @@ parser.add_argument('--candidates', type=int, default=1000, metavar='J', help='C
 parser.add_argument('--top-candidates', type=int, default=100, metavar='K', help='Number of top candidates to fit')
 parser.add_argument('--test', action='store_true', help='Test only')
 
-<<<<<<< HEAD
-#parser.add_argument('--test-interval', type=int, default=25, metavar='I', help='Test interval (episodes)')
-parser.add_argument('--test-interval', type=int, default=10, metavar='I', help='Test interval (episodes)')
 
-parser.add_argument('--test-episodes', type=int, default=10, metavar='E', help='Number of test episodes')
-=======
 parser.add_argument('--test-interval', type=int, default=25, metavar='I', help='Test interval (episodes)')
 #parser.add_argument('--test-interval', type=int, default=10, metavar='I', help='Test interval (episodes)')
 
 parser.add_argument('--test-episodes', type=int, default=5, metavar='E', help='Number of test episodes')
->>>>>>> 6fd364b8fdad3960076a2662a20e1ad77ccfa510
+
 parser.add_argument('--checkpoint-interval', type=int, default=50, metavar='I', help='Checkpoint interval (episodes)')
 parser.add_argument('--checkpoint-experience', action='store_true', help='Checkpoint experience replay')
 parser.add_argument('--models', type=str, default='', metavar='M', help='Load model checkpoint')
@@ -187,17 +179,9 @@ summary_name = results_dir + "/{}_{}_log"
 writer = SummaryWriter(summary_name.format(args.env, args.id))
 print("writer is ready")
 
-<<<<<<< HEAD
-# wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
-#     "batch_size": args.batch_size,
-#     "overshooting_distance" : args.overshooting_distance,
-#     "episodes" : args.episodes,
-#     "chunk_size" : args.chunk_size,
-#     "planning_horizon" : args.planning_horizon,
-#     "planning_discount" : args.discount,
-#     "max_steps": args.max_steps,
-# })
-=======
+
+
+
 wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
     "batch_size": args.batch_size,
     "overshooting_distance" : args.overshooting_distance,
@@ -207,16 +191,13 @@ wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
     "planning_discount" : args.discount,
     "max_steps": args.max_steps,
 })
->>>>>>> 6fd364b8fdad3960076a2662a20e1ad77ccfa510
+
 
 #env = gym.make(args.env, render_mode='human' if args.render else None)
 env = GymMoreRedBalls(room_size=10)
 env = ActionSpaceWrapper(env, args.max_steps,new_action_space=3)
 env = FullyCustom(env, args.max_steps)
-<<<<<<< HEAD
-#env = MaxStepsWrapper(env, args.max_steps)
-=======
->>>>>>> 6fd364b8fdad3960076a2662a20e1ad77ccfa510
+
 env = MaxStepsWrapper(env, args.max_steps, args.symbolic_env, args.seed, args.max_episode_length, args.action_repeat, args.bit_depth, new_action_space=3)
 
 
@@ -624,10 +605,7 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
         "value_loss": sum(losses[4]) / len(losses[4]),
     }, step=episode)
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 6fd364b8fdad3960076a2662a20e1ad77ccfa510
     lineplot(
         metrics['episodes'][-len(metrics['observation_loss']) :],
         metrics['observation_loss'],
@@ -652,17 +630,12 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
 
         episode_steps = 0  # 에피소드 내 스텝 수 초기화
         episode_values = []  # 각 스텝에서의 value를 저장할 리스트
-<<<<<<< HEAD
 
-        pbar = tqdm(range(args.max_episode_length // args.action_repeat))
-        for t in pbar:  #총 에피소드 길이를 repeat수로 나눠 action 취함
-            print("step",t)
-=======
         #pbar = tqdm(range(args.max_episode_length // args.action_repeat))
         pbar = tqdm(range(args.max_steps // args.action_repeat))
         print("pbar : ", pbar)
         for t in pbar:  #총 에피소드 길이를 repeat수로 나눠 action 취
->>>>>>> 6fd364b8fdad3960076a2662a20e1ad77ccfa510
+
 
             belief, posterior_state, action, next_observation, reward, done = update_belief_and_act(
                 args,
@@ -688,23 +661,7 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
                 pbar.close()
                 break
 
-<<<<<<< HEAD
-                # Log episode performance metrics in wandb
-            wandb.log({
-                    "episode": episode,
-                    "steps": episode_steps,
-                    "reward": reward,
-                    "mean_value": np.mean(episode_values),
-            }, step=episode)
-=======
-        #     # wandb에 에피소드 성능 기록
-        # wandb.log({
-        #     "episode": episode,
-        #     "steps": episode_steps,
-        #     "reward": total_reward,
-        #     "mean_value": np.mean(episode_values),
-        # }, step=episode)
->>>>>>> 6fd364b8fdad3960076a2662a20e1ad77ccfa510
+
 
         # Update and plot train reward metrics
         metrics['steps'].append(t + metrics['steps'][-1])
@@ -716,9 +673,7 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
             'train_rewards',
             results_dir,
         )
-<<<<<<< HEAD
 
-=======
         # wandb에 에피소드 성능 기록
         wandb.log({
             "episode": episode,
@@ -726,7 +681,7 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
             "reward": total_reward,
             "mean_value": np.mean(episode_values),
         }, step=episode)
->>>>>>> 6fd364b8fdad3960076a2662a20e1ad77ccfa510
+
     # # Test model
     # print("Test model")
     # if episode % args.test_interval == 0:
@@ -762,12 +717,7 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
     #         )
     #         pbar = tqdm(range(args.max_episode_length // args.action_repeat))
     #         for t in pbar:
-<<<<<<< HEAD
-=======
-    #             #model.py의 107번째 컴파일 찍기 바로
-    #             #belif : torch.Size([5, 200]), observation : torch.Size([1, 3, 64, 64])
-    #
->>>>>>> 6fd364b8fdad3960076a2662a20e1ad77ccfa510
+
     #             belief, posterior_state, action, next_observation, reward, done = update_belief_and_act(
     #                 args,
     #                 test_envs,

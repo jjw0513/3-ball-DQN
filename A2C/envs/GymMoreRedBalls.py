@@ -128,6 +128,8 @@ class GymMoreRedBalls(RoomGridLevel):
 
         self.num_dists = num_dists
         self.num_objs = num_objs
+
+
         super().__init__(num_rows=1, num_cols=1, room_size=room_size, **kwargs)
 
         #일단 max_step 임의 지정
