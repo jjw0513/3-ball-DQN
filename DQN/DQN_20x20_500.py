@@ -37,6 +37,7 @@ args = parser.parse_args()
 
 
 # Initialize wandb and log hyperparameters
+
 wandb.init(project=args.wandb_project, entity=args.wandb_entity, name=args.run_name,config={
     "batch_size": args.batch_size,
     "learning_rate": args.learning_rate,

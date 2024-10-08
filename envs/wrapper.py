@@ -22,6 +22,7 @@ class MaxStepsWrapper(Wrapper):
     #def step(self, action):
     #    return self.env.step(action)
     def step(self, action):
+        #observation : (20, 20, 3)
         observation, r, terminated, truncated, info = self.env.step(action)
         obs = self.preprocess_state(observation)
         return obs, r, terminated, truncated, info
