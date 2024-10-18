@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from torchsummary import summary
 import numpy as np
 import torch
 from tensorboardX import SummaryWriter
@@ -72,8 +73,8 @@ parser.add_argument('--state-size', type=int, default=30, metavar='Z', help='Sta
 parser.add_argument('--action-repeat', type=int, default=1, metavar='R', help='Action repeat')
 parser.add_argument('--action-noise', type=float, default=0.3, metavar='ε', help='Action noise')
 
-#parser.add_argument('--episodes', type=int, default=1000, metavar='E', help='Total number of episodes')
-parser.add_argument('--episodes', type=int, default=10, metavar='E', help='Total number of episodes')
+parser.add_argument('--episodes', type=int, default=1000, metavar='E', help='Total number of episodes')
+#parser.add_argument('--episodes', type=int, default=10, metavar='E', help='Total number of episodes')
 
 parser.add_argument('--seed-episodes', type=int, default=5, metavar='S', help='Seed episodes')
 parser.add_argument('--collect-interval', type=int, default=100, metavar='C', help='Collect interval')
@@ -109,9 +110,11 @@ parser.add_argument(
 parser.add_argument('--global-kl-beta', type=float, default=0, metavar='βg', help='Global KL weight (0 to disable)')
 parser.add_argument('--free-nats', type=float, default=3, metavar='F', help='Free nats')
 parser.add_argument('--bit-depth', type=int, default=5, metavar='B', help='Image bit depth (quantisation)')
-parser.add_argument('--model_learning-rate', type=float, default=1e-3, metavar='α', help='Learning rate')
-parser.add_argument('--actor_learning-rate', type=float, default=8e-5, metavar='α', help='Learning rate')
-parser.add_argument('--value_learning-rate', type=float, default=8e-5, metavar='α', help='Learning rate')
+parser.add_argument('--model_learning-rate', type=float, default=1e-4, metavar='α', help='Learning rate')
+parser.add_argument('--actor_learning-rate', type=float, default=4e-5, metavar='α', help='Learning rate')
+parser.add_argument('--value_learning-rate', type=float, default=1e-4, metavar='α', help='Learning rate')
+
+
 parser.add_argument(
     '--learning-rate-schedule',
     type=int,
@@ -371,8 +374,8 @@ if args.test:
                 torch.zeros(1, int(env.action_space.n), device=args.device),
             )
             #args.action_repeat로 나누어 반복 횟수를 줄인다.
-            #pbar = tqdm(range(args.max_episode_length // args.action_repeat))
-            pbar = tqdm(range(args.max_steps // args.action_repeat))
+            pbar = tqdm(range(args.max_episode_length // args.action_repeat))
+            #pbar = tqdm(range(args.max_steps // args.action_repeat))
             for t in pbar:                      #update_belief_and_act함수를 호출하여 현재 상태를 업데이트하고,
                                                 #다음 행동을 선택한다.
                 belief, posterior_state, action, observation, reward, done = update_belief_and_act(
@@ -542,6 +545,7 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
         model_loss = observation_loss + reward_loss + kl_loss #손실 저의
         # Update model parameters
         model_optimizer.zero_grad()
+        model_optimizer.zero_grad()
         model_loss.backward()
         nn.utils.clip_grad_norm_(param_list, args.grad_clip_norm, norm_type=2)
         model_optimizer.step()
@@ -631,8 +635,8 @@ for episode in tqdm(    #마지막으로 완료된 에피소드 요소에 +1하�
         episode_steps = 0  # 에피소드 내 스텝 수 초기화
         episode_values = []  # 각 스텝에서의 value를 저장할 리스트
 
-        #pbar = tqdm(range(args.max_episode_length // args.action_repeat))
-        pbar = tqdm(range(args.max_steps // args.action_repeat))
+        pbar = tqdm(range(args.max_episode_length // args.action_repeat))
+        #pbar = tqdm(range(args.max_steps // args.action_repeat))
         print("pbar : ", pbar)
         for t in pbar:  #총 에피소드 길이를 repeat수로 나눠 action 취
 

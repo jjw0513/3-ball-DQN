@@ -22,9 +22,10 @@ parser.add_argument('--epsilon-decay', type=int, default=200, metavar='ED', help
 parser.add_argument('--replay-memory-size', type=int, default=10000, metavar='RMS', help='Replay memory size')
 parser.add_argument('--gamma', type=float, default=0.9, metavar='G', help='Discount factor')
 parser.add_argument('--target-update-iter', type=int, default=200, metavar='TUI', help='Target network update interval')
-parser.add_argument('--max-steps', type=int, default=500, metavar='MS', help='Maximum number of steps per episode')
-parser.add_argument('--episodes', type=int, default=1000, metavar='E', help='Total number of episodes')
+parser.add_argument('--max-steps', type=int, default=5000, metavar='MS', help='Maximum number of steps per episode')
+parser.add_argument('--episodes', type=int, default=4000, metavar='E', help='Total number of episodes')
 parser.add_argument('--env', type=str, default='GymMoreRedBalls-v0', help='Gym environment')
+parser.add_argument('--total-steps', type=int, default=1e7, metavar='MS')
 
 parser.add_argument('--render', action='store_true', default=True, help='Render environment')
 parser.add_argument('--wandb-project', type=str, default='3ball_CAP', help='WandB project name')
@@ -32,9 +33,9 @@ parser.add_argument('--wandb-entity', type=str, default='hails', help='WandB ent
 
 args = parser.parse_args()
 
-'''
+
 # Initialize wandb and log hyperparameters
-wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
+wandb.init(project=args.wandb_project, entity=args.wandb_entity, name = 'DQN_20x20_1e7',config={
     "batch_size": args.batch_size,
     "learning_rate": args.learning_rate,
     "epsilon_start": args.epsilon_start,
@@ -45,13 +46,13 @@ wandb.init(project=args.wandb_project, entity=args.wandb_entity, config={
     "target_update_iter": args.target_update_iter,
     "max_steps": args.max_steps,
 })
-'''
+
 # Create and wrap the environment
 #env = gym.make(args.env, render_mode='human' if args.render else None)
 env = GymMoreRedBalls(room_size=20, render_mode="human")
 env = FullyCustom(env, args.max_steps)
 env = MaxStepsWrapper(env, args.max_steps)
-device = th.device("cuda" if th.cuda.is_available() and not args.disable_cuda else "cpu")
+device = th.device("cuda" if th.cuda.is_available() else "cpu")
 n_action = 3
 
 if isinstance(env.observation_space, gym.spaces.Dict):
@@ -115,7 +116,7 @@ class DQN:
         if sample > eps_threshold:
             with th.no_grad():
                 state = state.unsqueeze(0)  # 2차원 텐서로 변환
-                return self.eval_q_net(state.to('cpu')).max(1)[1].view(1, 1)
+                return self.eval_q_net(state.to(device)).max(1)[1].view(1, 1)
         else:
             return th.tensor([[random.randrange(n_action)]], device=device, dtype=th.long)
 
@@ -154,55 +155,111 @@ class DQN:
 dqn = DQN()
 steps_done = 0
 
+
+obs = env.reset()
+s = obs
+global_step = 0
+step = 0
+r = 0.0
+total_reward = 0.0
+episode_loss = 0
+episode_value = 0
+episode = 0
+done = False
+
+while global_step < args.total_steps:
+    step += 1  # 에피소드 내의 스텝 증가
+    global_step += 1  # 전체 스텝 증가
+    a = dqn.select_action(th.FloatTensor(s).to(device))
+    obs, r, terminated, truncated, info = env.step(a.item())  # 액션을 넘겨줄 때 item() 메서드 사용
+    done = terminated or truncated
+    s_ = obs
+    transition = [s.tolist(), a.item(), [r], s_.tolist(), [done]]
+    dqn.replay_mem.store_transition(transition)
+    total_reward += r
+    s = s_
+
+    print("global_step:", global_step, "step:", step, "reward:", r)
+    print("episode : ", episode, "reward : ", total_reward)
+
+    if dqn.replay_mem.size() > args.batch_size:
+        dqn.learn()
+
+    if done:
+        # 에피소드 종료 시 로깅
+        wandb.log({
+            "episode": episode,
+            "reward": total_reward,
+            "steps": step
+        }, step=global_step)  # global_step을 로그에 포함
+
+        # 에피소드 관련 변수 초기화
+        step = 0  # 에피소드 내 스텝 초기화
+        episode += 1  # 에피소드 증가
+        total_reward = 0.0  # 보상 초기화
+        s = env.reset()  # 새로운 에피소드 시작
+
+    # 전체 스텝이 종료 조건을 만족하면 학습 종료
+    if global_step >= args.total_steps:
+        break
+
+# 모델 저장
+th.save(dqn.eval_q_net.state_dict(), "dqn_eval_q_net_min.pth")
+th.save(dqn.target_q_net.state_dict(), "dqn_target_q_net_min.pth")
+
+env.close()
+#wandb.finish()
+
+
 #def preprocess_state(obs):
 #    if isinstance(obs, dict):
 #        return obs['image'].flatten()
 #    else:
 #        return obs.flatten()
 
-for episode in range(args.episodes):
-    obs = env.reset()
-    #s = preprocess_state(obs[0])  # Initial state
-    s = obs
-    step = 0
-    r = 0.0
-    total_reward = 0.0
-    episode_loss = 0
-    episode_value = 0
-    done = False
-    while not done:
-        step += 1
-        a = dqn.select_action(th.FloatTensor(s).to(device))
-        obs, r, terminated, truncated, info = env.step(a.item())  # 액션을 넘겨줄 때 item() 메서드 사용
-        done = terminated or truncated
-        #s_ = preprocess_state(obs)
-        s_=obs
-        transition = [s.tolist(), a.item(), [r], s_.tolist(), [done]]
-        dqn.replay_mem.store_transition(transition)
-        total_reward += r
-        s = s_
-        print("step:", step, "reward:", r)
-        print("episode : ", episode, "reward : ", r)
-        if dqn.replay_mem.size() > args.batch_size:
-            dqn.learn()
-
-        if done:
-            #wandb.log({"steps": step})
-            break
-
-    episode_loss = np.mean(dqn.loss_history[-step:]) if step > 0 else 0
-    avg_q_value = th.mean(dqn.eval_q_net(th.FloatTensor([s]).to(device))).item()
-'''
-    wandb.log({
-         "episode": episode,
-         "reward": total_reward,
-         "average_loss": episode_loss,
-        "avg_q_value": avg_q_value,
-        "steps": step
-     },step=episode)
-'''
-th.save(dqn.eval_q_net.state_dict(), "dqn_eval_q_net_min.pth")
-th.save(dqn.target_q_net.state_dict(), "dqn_target_q_net_min.pth")
-
-env.close()
-#wandb.finish()
+# for episode in range(args.episodes):
+#     obs = env.reset()
+#     #s = preprocess_state(obs[0])  # Initial state
+#     s = obs
+#     step = 0
+#     r = 0.0
+#     total_reward = 0.0
+#     episode_loss = 0
+#     episode_value = 0
+#     done = False
+#     while not done:
+#         step += 1
+#         a = dqn.select_action(th.FloatTensor(s).to(device))
+#         obs, r, terminated, truncated, info = env.step(a.item())  # 액션을 넘겨줄 때 item() 메서드 사용
+#         done = terminated or truncated
+#         #s_ = preprocess_state(obs)
+#         s_=obs
+#         transition = [s.tolist(), a.item(), [r], s_.tolist(), [done]]
+#         dqn.replay_mem.store_transition(transition)
+#         total_reward += r
+#         s = s_
+#         print("step:", step, "reward:", r)
+#         print("episode : ", episode, "reward : ", r)
+#         if dqn.replay_mem.size() > args.batch_size:
+#             dqn.learn()
+#
+#         if done:
+#             #wandb.log({"steps": step})
+#             break
+#
+#     episode_loss = np.mean(dqn.loss_history[-step:]) if step > 0 else 0
+#     avg_q_value = th.mean(dqn.eval_q_net(th.FloatTensor([s]).to(device))).item()
+# '''
+#     wandb.log({
+#          "episode": episode,
+#          "reward": total_reward,
+#          "average_loss": episode_loss,
+#         "avg_q_value": avg_q_value,
+#         "steps": step
+#      },step=episode)
+# '''
+# th.save(dqn.eval_q_net.state_dict(), "dqn_eval_q_net_min.pth")
+# th.save(dqn.target_q_net.state_dict(), "dqn_target_q_net_min.pth")
+#
+# env.close()
+# #wandb.finish()
